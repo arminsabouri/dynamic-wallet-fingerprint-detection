@@ -1,0 +1,40 @@
+services:
+  bitcoin-core:
+    image: lncm/bitcoind:v28.0
+    container_name: dwf-bitcoind
+    restart: unless-stopped
+    volumes:
+      - ./docker/bitcoin/bitcoin.conf:/data/.bitcoin/bitcoin.conf:ro
+      - bitcoin-data:/data/.bitcoin
+    ports:
+      - "18443:8332"   # RPC (regtest)
+      - "28332:28332"  # ZMQ blocks
+      - "28333:28333"  # ZMQ txs
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-regtest", "-rpcuser=bitcoin", "-rpcpassword=bitcoin", "getblockchaininfo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  fulcrum:
+    image: cculianu/fulcrum:latest
+    container_name: dwf-fulcrum
+    restart: unless-stopped
+    depends_on:
+      bitcoin-core:
+        condition: service_healthy
+    volumes:
+      - ./docker/fulcrum/fulcrum.conf:/etc/fulcrum.conf:ro
+      - fulcrum-data:/data/fulcrum
+    ports:
+      - "50001:50001"  # Electrum TCP
+    command: Fulcrum /etc/fulcrum.conf
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50001"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  bitcoin-data:
+  fulcrum-data:

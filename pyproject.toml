@@ -1,0 +1,32 @@
+[project]
+name = "dynamic-wallet-fingerprints"
+version = "0.1.0"
+description = "Automated Bitcoin wallet GUI harness for generating ground-truth fingerprint transactions on regtest"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40.0",
+    "pyautogui>=0.9.54",
+    "opencv-python>=4.10.0",
+    "Pillow>=11.0.0",
+    "python-bitcoinrpc>=1.0",
+    "xvfbwrapper>=0.2.9",
+    "python-dotenv>=1.0.0",
+    "click>=8.1.0",
+    "pydantic>=2.9.0",
+]
+
+[project.scripts]
+dwf = "run:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["harness", "wallets", "scenarios", "bitcoin", "analysis"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
