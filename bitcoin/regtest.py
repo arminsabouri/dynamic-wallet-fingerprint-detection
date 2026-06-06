@@ -32,12 +32,11 @@ class RegtestNode:
 
     def create_or_load_wallet(self, name: str, descriptors: bool = True) -> None:
         existing = self._rpc.listwallets()
-        if name in existing:
-            return
-        try:
-            self._rpc.loadwallet(name)
-        except JSONRPCException:
-            self._rpc.createwallet(name, False, False, "", False, descriptors)
+        if name not in existing:
+            try:
+                self._rpc.loadwallet(name)
+            except JSONRPCException:
+                self._rpc.createwallet(name, False, False, "", False, descriptors)
         self._wallet_name = name
         self._rpc = self._connect(name)
 

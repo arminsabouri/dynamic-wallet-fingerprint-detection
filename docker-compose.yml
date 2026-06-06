@@ -30,7 +30,7 @@ services:
       - "50001:50001"  # Electrum TCP
     command: Fulcrum /etc/fulcrum.conf
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50001"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/50001"]
       interval: 5s
       timeout: 5s
       retries: 30
