@@ -5,7 +5,7 @@ import signal
 import subprocess
 import time
 
-from wallets.electrum.setup import electrum_bin, wallet_path
+from wallets.electrum.setup import electrum_cmd, wallet_path
 
 _proc: subprocess.Popen | None = None
 
@@ -13,10 +13,9 @@ _proc: subprocess.Popen | None = None
 def start() -> None:
     """Launch Electrum GUI. Blocks ~3s for the window to appear."""
     global _proc
-    bin_ = electrum_bin()
     wp = str(wallet_path())
     _proc = subprocess.Popen(
-        [bin_, "--regtest", "--wallet", wp, "--gui", "qt"],
+        [*electrum_cmd(), "--regtest", "--wallet", wp, "--gui", "qt"],
         env=os.environ.copy(),
     )
     time.sleep(4.0)  # give Qt time to render the main window
