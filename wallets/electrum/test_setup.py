@@ -1,3 +1,4 @@
+import pytest
 from pathlib import Path
 
 from wallets.electrum import setup
@@ -32,3 +33,17 @@ def test_electrum_cmd_is_python_then_bin(monkeypatch):
     monkeypatch.setenv("ELECTRUM_PYTHON", "/tmp/py")
     monkeypatch.setenv("ELECTRUM_BIN", "/opt/electrum/run_electrum")
     assert setup.electrum_cmd() == ["/tmp/py", "/opt/electrum/run_electrum"]
+
+
+def _electrum_available():
+    return Path(setup.electrum_python()).exists() and Path(setup.electrum_bin()).exists()
+
+
+@pytest.mark.skipif(not _electrum_available(), reason="Electrum source/venv not installed")
+def test_create_wallet_and_get_address(tmp_path, monkeypatch):
+    monkeypatch.setattr(setup, "WALLET_NAME", "dwf_pytest")
+    monkeypatch.setattr(setup, "electrum_wallet_dir", lambda: tmp_path)
+    setup.create_wallet_if_missing()
+    assert (tmp_path / "dwf_pytest").exists()
+    addr = setup.get_wallet_address()
+    assert addr.startswith("bcrt1")
