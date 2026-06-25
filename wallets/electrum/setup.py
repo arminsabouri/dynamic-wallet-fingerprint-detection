@@ -15,6 +15,19 @@ def electrum_bin() -> str:
     return os.getenv("ELECTRUM_BIN", str(default))
 
 
+def electrum_python() -> str:
+    # Electrum's deps live in its own venv beside run_electrum; the bare script's
+    # shebang would fall back to system Python and miss them.
+    override = os.getenv("ELECTRUM_PYTHON")
+    if override:
+        return override
+    return str(Path(electrum_bin()).parent / "venv" / "bin" / "python")
+
+
+def electrum_cmd() -> list[str]:
+    return [electrum_python(), electrum_bin()]
+
+
 def electrum_wallet_dir() -> Path:
     return Path.home() / ".electrum" / "regtest" / "wallets"
 

@@ -15,3 +15,20 @@ def test_electrum_bin_default_is_repo_sibling(monkeypatch):
     assert setup.electrum_bin() == expected
     # the original bug returned an unnormalized path containing ".."
     assert ".." not in setup.electrum_bin()
+
+
+def test_electrum_python_override(monkeypatch):
+    monkeypatch.setenv("ELECTRUM_PYTHON", "/tmp/py")
+    assert setup.electrum_python() == "/tmp/py"
+
+
+def test_electrum_python_default_is_venv_beside_bin(monkeypatch):
+    monkeypatch.delenv("ELECTRUM_PYTHON", raising=False)
+    monkeypatch.setenv("ELECTRUM_BIN", "/opt/electrum/run_electrum")
+    assert setup.electrum_python() == "/opt/electrum/venv/bin/python"
+
+
+def test_electrum_cmd_is_python_then_bin(monkeypatch):
+    monkeypatch.setenv("ELECTRUM_PYTHON", "/tmp/py")
+    monkeypatch.setenv("ELECTRUM_BIN", "/opt/electrum/run_electrum")
+    assert setup.electrum_cmd() == ["/tmp/py", "/opt/electrum/run_electrum"]
