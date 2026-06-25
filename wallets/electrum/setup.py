@@ -9,7 +9,10 @@ WALLET_NAME = "dwf_regtest"
 
 
 def electrum_bin() -> str:
-    return os.getenv("ELECTRUM_BIN", str(Path(__file__).parents[3] / "../electrum/run_electrum"))
+    # setup.py lives at <repo>/wallets/electrum/, so parents[2] is the repo root
+    repo_root = Path(__file__).resolve().parents[2]
+    default = repo_root.parent / "electrum" / "run_electrum"
+    return os.getenv("ELECTRUM_BIN", str(default))
 
 
 def electrum_wallet_dir() -> Path:
