@@ -118,9 +118,13 @@ def write_electrum_config(fulcrum_host: str = "127.0.0.1", fulcrum_port: int = 5
     config_file = config_dir / "config"
 
     config = {
+        # Without an up-to-date config_version Electrum runs a legacy migration
+        # that rewrites the server's protocol to SSL; our Fulcrum speaks plain
+        # TCP, so the daemon would then fail every connection. 3 is Electrum
+        # 4.7.2's FINAL_CONFIG_VERSION.
+        "config_version": 3,
         "auto_connect": False,
         "oneserver": True,
         "server": f"{fulcrum_host}:{fulcrum_port}:t",
-        "network": "regtest",
     }
     config_file.write_text(json.dumps(config, indent=2))

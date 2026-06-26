@@ -1,3 +1,4 @@
+import json
 import pytest
 from pathlib import Path
 
@@ -47,6 +48,17 @@ def test_create_wallet_and_get_address(tmp_path, monkeypatch):
     assert (tmp_path / "dwf_pytest").exists()
     addr = setup.get_wallet_address()
     assert addr.startswith("bcrt1")
+
+
+def test_write_electrum_config_pins_version_and_tcp_server(tmp_path, monkeypatch):
+    monkeypatch.setattr(setup, "electrum_config_dir", lambda: tmp_path)
+    setup.write_electrum_config("127.0.0.1", 50001)
+    cfg = json.loads((tmp_path / "config").read_text())
+    # config_version pins Electrum past the migration that rewrites the server
+    # to SSL, which a plain-TCP Fulcrum would refuse.
+    assert cfg["config_version"] == 3
+    assert cfg["server"] == "127.0.0.1:50001:t"
+    assert cfg["oneserver"] is True
 
 
 class _FakeRun:
