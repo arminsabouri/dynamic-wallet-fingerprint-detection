@@ -47,3 +47,56 @@ def test_create_wallet_and_get_address(tmp_path, monkeypatch):
     assert (tmp_path / "dwf_pytest").exists()
     addr = setup.get_wallet_address()
     assert addr.startswith("bcrt1")
+
+
+class _FakeRun:
+    def __init__(self, stdout="", stderr=""):
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+def test_electrum_daemon_recovers_from_stale_lock(monkeypatch):
+    calls = []
+
+    def fake_run(*args, **_kw):
+        calls.append(args)
+        if args == ("daemon", "-d"):
+            first = calls.count(("daemon", "-d")) == 1
+            return _FakeRun("Daemon already running (lockfile detected)." if first
+                            else "starting daemon (PID 1)")
+        if args[0] == "list_wallets":
+            return _FakeRun("Daemon not running; try 'electrum daemon -d'")
+        return _FakeRun()
+
+    cleared = []
+    monkeypatch.setattr(setup, "_run_electrum", fake_run)
+    monkeypatch.setattr(setup, "_clear_daemon_lock", lambda: cleared.append(True))
+
+    with setup.electrum_daemon():
+        pass
+
+    assert cleared == [True]                     # stale lock detected and cleared
+    assert calls.count(("daemon", "-d")) == 2    # daemon retried after clearing
+    assert ("stop",) in calls                    # retry started it, so we stop it
+
+
+def test_electrum_daemon_leaves_live_daemon_untouched(monkeypatch):
+    calls = []
+
+    def fake_run(*args, **_kw):
+        calls.append(args)
+        if args == ("daemon", "-d"):
+            return _FakeRun("Daemon already running (lockfile detected).")
+        if args[0] == "list_wallets":
+            return _FakeRun("[]")                 # daemon answers, so it is alive
+        return _FakeRun()
+
+    cleared = []
+    monkeypatch.setattr(setup, "_run_electrum", fake_run)
+    monkeypatch.setattr(setup, "_clear_daemon_lock", lambda: cleared.append(True))
+
+    with setup.electrum_daemon():
+        pass
+
+    assert cleared == []              # a live daemon's lockfile is never cleared
+    assert ("stop",) not in calls     # we did not start it, so we must not stop it

@@ -44,6 +44,19 @@ def _run_electrum(*args: str, timeout: int = 30) -> subprocess.CompletedProcess:
     )
 
 
+def _daemon_alive() -> bool:
+    # list_wallets only talks to the daemon process (no network), so it tells a
+    # live daemon apart from a stale lockfile, which both make `daemon -d` say
+    # "already running". The CLI exits 0 either way, so check the message.
+    out = _run_electrum("list_wallets", timeout=10)
+    return "daemon not running" not in (out.stdout + out.stderr).lower()
+
+
+def _clear_daemon_lock() -> None:
+    for name in ("daemon", "daemon_rpc_socket"):
+        (electrum_config_dir() / name).unlink(missing_ok=True)
+
+
 @contextlib.contextmanager
 def electrum_daemon():
     """Run an Electrum regtest daemon for the duration of the block.
@@ -53,6 +66,12 @@ def electrum_daemon():
     """
     result = _run_electrum("daemon", "-d")
     started = "starting daemon" in result.stdout.lower()
+    if not started and not _daemon_alive():
+        # An unclean shutdown leaves a lockfile that blocks startup forever;
+        # clear it and retry rather than running every command daemon-less.
+        _clear_daemon_lock()
+        result = _run_electrum("daemon", "-d")
+        started = "starting daemon" in result.stdout.lower()
     try:
         yield
     finally:
