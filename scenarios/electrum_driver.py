@@ -75,3 +75,13 @@ def wait_for_coins(*, min_count: int = 1, attempts: int = 40, poll: float = 0.5)
 
 def broadcast(tx_hex: str) -> str:
     return _run(["broadcast", tx_hex], with_wallet=False)
+
+
+def history(*, outgoing_only: bool = True) -> list:
+    """Return wallet transaction ids from Electrum's on-chain history.
+
+    Defaults to outgoing txs: the ones the wallet built (e.g. by an agent
+    driving the GUI), which are the ones a fingerprint detector reasons about.
+    """
+    items = json.loads(_run(["onchain_history"]))
+    return [it["txid"] for it in items if not (outgoing_only and it.get("incoming"))]

@@ -110,3 +110,18 @@ def test_wait_for_coins_gives_up_after_attempts(monkeypatch):
     monkeypatch.setattr(drv.time, "sleep", lambda _s: None)
     coins = drv.wait_for_coins(attempts=3)
     assert coins == [] and len(calls) == 3  # bounded, does not block forever
+
+
+def test_history_returns_outgoing_txids(monkeypatch):
+    class R:
+        returncode = 0
+        stdout = (
+            '[{"txid": "out1", "incoming": false},'
+            ' {"txid": "in1", "incoming": true},'
+            ' {"txid": "out2", "incoming": false}]'
+        )
+        stderr = ""
+
+    monkeypatch.setattr(drv.subprocess, "run", lambda cmd, **kw: R())
+    assert drv.history() == ["out1", "out2"]
+    assert drv.history(outgoing_only=False) == ["out1", "in1", "out2"]
