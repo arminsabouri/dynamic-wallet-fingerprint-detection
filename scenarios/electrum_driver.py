@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -54,6 +55,22 @@ def paytomany(outputs, *, rbf=None, feerate=None, from_coins=None) -> str:
 
 def listunspent() -> list:
     return json.loads(_run(["listunspent"]))
+
+
+def wait_for_coins(*, min_count: int = 1, attempts: int = 40, poll: float = 0.5) -> list:
+    """Block until the wallet shows at least `min_count` spendable coins.
+
+    Electrum trails the chain while Fulcrum indexes a freshly mined block, so
+    coin selection can briefly see an empty wallet and a payto fail. Polling
+    here instead of a fixed sleep keeps generation reliable without overwaiting.
+    """
+    coins = []
+    for _ in range(attempts):
+        coins = listunspent()
+        if len(coins) >= min_count:
+            return coins
+        time.sleep(poll)
+    return coins
 
 
 def broadcast(tx_hex: str) -> str:

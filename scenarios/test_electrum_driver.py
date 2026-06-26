@@ -94,3 +94,19 @@ def test_listunspent_parses_json(monkeypatch):
     monkeypatch.setattr(drv.subprocess, "run", lambda cmd, **kw: R())
     coins = drv.listunspent()
     assert coins[0]["prevout_hash"] == "aa" and coins[0]["prevout_n"] == 1
+
+
+def test_wait_for_coins_polls_until_present(monkeypatch):
+    results = [[], [], [{"prevout_hash": "aa", "prevout_n": 0}]]
+    monkeypatch.setattr(drv, "listunspent", lambda: results.pop(0))
+    monkeypatch.setattr(drv.time, "sleep", lambda _s: None)
+    coins = drv.wait_for_coins(attempts=5)
+    assert len(coins) == 1 and results == []  # returned on the 3rd poll
+
+
+def test_wait_for_coins_gives_up_after_attempts(monkeypatch):
+    calls = []
+    monkeypatch.setattr(drv, "listunspent", lambda: calls.append(1) or [])
+    monkeypatch.setattr(drv.time, "sleep", lambda _s: None)
+    coins = drv.wait_for_coins(attempts=3)
+    assert coins == [] and len(calls) == 3  # bounded, does not block forever

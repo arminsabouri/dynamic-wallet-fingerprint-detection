@@ -12,17 +12,20 @@ class GeneratedTx:
     fingerprints: list = field(default_factory=list)
 
 
-def generate(node, scenarios, *, driver=electrum_driver, settle: float = 0.0, repeat: int = 1) -> list[GeneratedTx]:
+def generate(node, scenarios, *, driver=electrum_driver, settle: float = 0.0, repeat: int = 1, sync=None) -> list[GeneratedTx]:
     """Generate `repeat` Electrum txs per scenario on regtest; return labeled records.
 
     A scenario whose payto/broadcast fails is skipped so one bad attempt does not abort
-    the run. ``settle`` seconds are slept after mining each block so the Electrum daemon
-    can sync before the next attempt's coin selection.
+    the run. ``sync``, if given, is called before each attempt to block until the wallet
+    has synced its coins (see electrum_driver.wait_for_coins); ``settle`` seconds are
+    slept after mining each block.
     """
     results: list[GeneratedTx] = []
     for sc in scenarios:
         for _ in range(repeat):
             try:
+                if sync is not None:
+                    sync()
                 if sc.build is not None:
                     tx_hex = sc.build(node, driver)
                 else:

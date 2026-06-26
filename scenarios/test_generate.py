@@ -82,6 +82,19 @@ def test_generate_uses_build_hook():
     assert out[0].txid == "txid"
 
 
+def test_generate_calls_sync_before_each_attempt():
+    node = FakeNode()
+    driver = FakeDriver()
+    syncs = []
+    scenarios = [
+        Scenario("a", "bech32", 0.005, {}),
+        Scenario("b", "bech32", 0.005, {}),
+    ]
+    generate(node, scenarios, driver=driver, sync=lambda: syncs.append(len(driver.calls)))
+    # sync runs before each payto, so the recorded call counts are 0 then 1
+    assert syncs == [0, 1]
+
+
 def test_generate_repeats_each_scenario():
     from scenarios.generate import generate
     from scenarios.scenarios import Scenario
