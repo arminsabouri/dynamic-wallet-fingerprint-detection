@@ -7,7 +7,6 @@ Usage:
 
 import os
 import sys
-import time
 from pathlib import Path
 
 import click
@@ -36,24 +35,11 @@ def cli(no_docker_check, coins):
     node.ensure_mature_coins()
     click.echo(f"  Height: {node.get_block_count()} blocks")
 
-    # -- Electrum wallet setup --
-    from wallets.electrum.setup import (
-        write_electrum_config,
-        create_wallet_if_missing,
-        get_wallet_address,
-    )
+    import bootstrap
     fulcrum_host = os.getenv("FULCRUM_HOST", "127.0.0.1")
     fulcrum_port = int(os.getenv("FULCRUM_PORT", "50001"))
-    write_electrum_config(fulcrum_host, fulcrum_port)
-    create_wallet_if_missing()
-    wallet_addr = get_wallet_address()
+    wallet_addr = bootstrap.prepare_wallet(node, coins=coins, fulcrum_host=fulcrum_host, fulcrum_port=fulcrum_port)
     click.echo(f"  Wallet address: {wallet_addr}")
-
-    # -- Pre-fund --
-    click.echo(f"  Funding wallet with {coins} BTC...")
-    node.fund_address(wallet_addr, coins)
-    node.mine_blocks(1)
-    time.sleep(3.0)  # Fulcrum indexing
 
     # -- Virtual display --
     from harness import display

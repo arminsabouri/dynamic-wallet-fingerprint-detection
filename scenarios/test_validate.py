@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from scenarios.generate import GeneratedTx
 from scenarios.validate import build_report
 
 
@@ -51,3 +52,19 @@ def test_miss_recorded_when_true_wallet_excluded():
     report = build_report(records, lambda txid: ({"Bitcoin Core"}, []))
     assert report.per_wallet["Electrum"]["recall"] == 0.0
     assert report.misses == [{"txid": "t1", "wallet": "Electrum", "candidates": ["Bitcoin Core"]}]
+
+
+def test_fingerprint_recall_counts_labeled_fingerprints_found():
+    # labels and detector output share one vocabulary (the detector's strings).
+    records = [
+        GeneratedTx("a", "Electrum", "default", ["signals RBF", "BIP-69 followed by outputs"]),
+        GeneratedTx("b", "Electrum", "send_p2tr", ["Sends to taproot address"]),
+    ]
+    # detector emits "signals RBF" (not BIP-69) for a, the taproot string for b
+    # -> 2 of 3 labeled fingerprints found.
+    verdicts = {
+        "a": ({"Electrum"}, ["signals RBF"]),
+        "b": ({"Electrum"}, ["Sends to taproot address"]),
+    }
+    report = build_report(records, lambda txid: verdicts[txid])
+    assert report.fingerprint_recall == 2 / 3

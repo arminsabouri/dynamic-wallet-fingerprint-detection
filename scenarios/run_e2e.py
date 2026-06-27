@@ -36,8 +36,9 @@ def _generate_electrum(node, repeat, coins):
         electrum_driver.wait_for_coins()
         # sync waits for coins to appear; settle gives a freshly mined block time
         # to confirm so the next scenario does not build on an unconfirmed coin.
+        from scenarios.drivers import ElectrumCliDriver
         return generate.generate(
-            node, scen.SCENARIOS, repeat=repeat, settle=1.5, sync=electrum_driver.wait_for_coins
+            scen.SCENARIOS, ElectrumCliDriver(), node, repeat=repeat, settle=1.5, sync=electrum_driver.wait_for_coins
         )
 
 

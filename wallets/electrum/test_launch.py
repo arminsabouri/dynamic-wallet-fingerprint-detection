@@ -16,6 +16,9 @@ def test_start_invokes_venv_python_and_gui(monkeypatch):
 
     monkeypatch.setattr(launch.subprocess, "Popen", fake_popen)
     monkeypatch.setattr(launch.time, "sleep", lambda _seconds: None)
+    # start() now stops any running daemon before launching the GUI; that path
+    # talks to a real Electrum and is irrelevant to this test.
+    monkeypatch.setattr(launch, "_ensure_no_daemon", lambda: None)
 
     launch.start()
 

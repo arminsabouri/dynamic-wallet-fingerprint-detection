@@ -14,7 +14,7 @@ def start(width: int = 1280, height: int = 800) -> str:
 
     _vdisplay = Xvfb(width=width, height=height, colordepth=24)
     _vdisplay.start()
-    display = f":{_vdisplay.vdisplay_num}"
+    display = f":{_vdisplay.new_display}"
     os.environ["DISPLAY"] = display
     return display
 

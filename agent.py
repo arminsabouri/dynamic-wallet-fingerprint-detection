@@ -20,12 +20,13 @@ from harness.executor import Action, X11Executor
 from harness.screen import screenshot
 from bitcoin.regtest import RegtestNode
 from wallets.electrum.setup import get_wallet_address
+from scenarios.taxonomy import enumeration_checklist
 
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """\
+SYSTEM_PROMPT = f"""\
 You are an autonomous Bitcoin wallet testing agent running on a Linux desktop.
 
 MISSION: Systematically enumerate EVERY type of Bitcoin transaction that can \
@@ -38,18 +39,14 @@ ENVIRONMENT:
 - You have unlimited free Bitcoin — call get_coins whenever the wallet balance is low
 - All transactions are on regtest (fake network, safe to experiment freely)
 
-WHAT MAKES TRANSACTIONS DISTINCT (wallet fingerprints):
-- Destination script type: P2PKH (1...), P2SH (3...), P2WPKH (bc1q...), P2TR (bc1p...)
-- Number of outputs: single, multiple (batch payment)
-- Change output: present vs absent (send-max), position (first/last)
-- Input count and selection: automatic vs manual coin control
-- Fee strategy: default, custom sat/vbyte, RBF-enabled (nSequence flag)
-- Special tx types: RBF bump, CPFP, consolidation, time-locked
-- Any other option you discover in the wallet UI
+TRANSACTION TYPES TO COVER (each exercises a distinct wallet fingerprint):
+{enumeration_checklist()}
+Discover and attempt any additional variant the wallet UI exposes beyond this list.
 
 HOW TO OPERATE:
 1. Call log_decision BEFORE attempting each new transaction type — describe \
-   what you're trying and which fingerprint signal it exercises
+   what you're trying and which fingerprint signal it exercises. Use the slug \
+   above as transaction_type when it matches.
 2. Take a screenshot whenever you need to see the current UI state
 3. Navigate by clicking, typing, and using keyboard shortcuts
 4. After broadcasting a transaction, mine a block to confirm it

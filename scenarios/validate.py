@@ -7,6 +7,7 @@ class Report:
     per_wallet: dict   # wallet -> {"count": int, "recall": float, "unique": float}
     per_scenario: dict # "wallet/scenario" -> {"candidates": [...], "recall": bool}
     misses: list       # [{"txid","wallet","candidates"}]
+    fingerprint_recall: float = 0.0
 
 
 def build_report(records, detect_fn) -> Report:
@@ -14,7 +15,7 @@ def build_report(records, detect_fn) -> Report:
     agg = {}
     sc_agg = {}
     misses = []
-    for rec, candidates, _fps in rows:
+    for rec, candidates, fps in rows:
         w = rec.wallet
         a = agg.setdefault(w, {"count": 0, "in": 0, "unique": 0})
         a["count"] += 1
@@ -40,4 +41,23 @@ def build_report(records, detect_fn) -> Report:
         k: {"count": s["count"], "recall": s["in"] / s["count"], "unique": s["unique"] / s["count"]}
         for k, s in sc_agg.items()
     }
-    return Report(total=len(rows), per_wallet=per_wallet, per_scenario=per_scenario, misses=misses)
+
+    # Fingerprint-recall: of the labeled fingerprints, how many the detector emitted
+    # (both sides use the detector's vocabulary, so a direct membership check).
+    labeled = 0
+    found = 0
+    for rec, _candidates, fps in rows:
+        detected = set(fps)
+        for fp in getattr(rec, "fingerprints", []):
+            labeled += 1
+            if fp in detected:
+                found += 1
+    fingerprint_recall = (found / labeled) if labeled else 0.0
+
+    return Report(
+        total=len(rows),
+        per_wallet=per_wallet,
+        per_scenario=per_scenario,
+        misses=misses,
+        fingerprint_recall=fingerprint_recall,
+    )

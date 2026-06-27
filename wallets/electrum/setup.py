@@ -117,6 +117,13 @@ def write_electrum_config(fulcrum_host: str = "127.0.0.1", fulcrum_port: int = 5
     config_dir.mkdir(parents=True, exist_ok=True)
     config_file = config_dir / "config"
 
+    existing = {}
+    if config_file.exists():
+        try:
+            existing = json.loads(config_file.read_text())
+        except (ValueError, OSError):
+            existing = {}
+
     config = {
         # Without an up-to-date config_version Electrum runs a legacy migration
         # that rewrites the server's protocol to SSL; our Fulcrum speaks plain
@@ -127,4 +134,10 @@ def write_electrum_config(fulcrum_host: str = "127.0.0.1", fulcrum_port: int = 5
         "oneserver": True,
         "server": f"{fulcrum_host}:{fulcrum_port}:t",
     }
+    # Preserve the daemon's RPC credentials. Overwriting the config without them
+    # desyncs the CLI from an already-running daemon, which answers 403 Forbidden.
+    for key in ("rpcuser", "rpcpassword", "rpcport", "rpchost", "rpcsock", "rpcsock_path"):
+        if key in existing:
+            config[key] = existing[key]
+
     config_file.write_text(json.dumps(config, indent=2))
